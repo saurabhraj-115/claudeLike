@@ -40,8 +40,8 @@ export default function Chat() {
       message,
       conversationId: id,
       apiKey,
-      attachments
-    }, {
+      attachments: attachments || []
+    } as any, {
       onError: (error) => {
         toast({
           title: "Error sending message",

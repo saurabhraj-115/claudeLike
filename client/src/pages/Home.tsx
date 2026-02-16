@@ -29,8 +29,8 @@ export default function Home() {
         message,
         conversationId: conversation.id,
         apiKey,
-        attachments
-      });
+        attachments: attachments || []
+      } as any);
 
       setLocation(`/chat/${conversation.id}`);
     } catch (error) {

@@ -48,7 +48,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const [message] = await db.insert(messages).values(insertMessage).returning();
+    const [message] = await db.insert(messages).values({
+      ...insertMessage,
+      attachments: insertMessage.attachments || []
+    } as any).returning();
     return message;
   }
 }

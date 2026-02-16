@@ -21,7 +21,7 @@ export async function registerRoutes(
   });
 
   app.get(api.conversations.get.path, async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const conversation = await storage.getConversation(id);
     if (!conversation) return res.status(404).json({ message: "Conversation not found" });
     
@@ -30,18 +30,18 @@ export async function registerRoutes(
   });
 
   app.delete(api.conversations.delete.path, async (req, res) => {
-    await storage.deleteConversation(parseInt(req.params.id));
+    await storage.deleteConversation(parseInt(req.params.id as string));
     res.status(204).send();
   });
 
   // Messages
   app.get(api.messages.list.path, async (req, res) => {
-    const messages = await storage.getMessages(parseInt(req.params.id));
+    const messages = await storage.getMessages(parseInt(req.params.id as string));
     res.json(messages);
   });
 
   app.post(api.messages.create.path, async (req, res) => {
-    const conversationId = parseInt(req.params.id);
+    const conversationId = parseInt(req.params.id as string);
     const message = await storage.createMessage({
       conversationId,
       ...req.body,
@@ -79,17 +79,17 @@ export async function registerRoutes(
       });
 
       // Prepare messages for Anthropic
-      const anthropicMessages = history.map(msg => ({
+      const anthropicMessages: Anthropic.Messages.MessageParam[] = history.map(msg => ({
         role: msg.role as "user" | "assistant",
         content: msg.content + (msg.attachments && msg.attachments.length > 0 
-          ? "\n\nAttachments:\n" + msg.attachments.map(a => `[File: ${a.name}]\n${a.content}`).join("\n\n")
+          ? "\n\nAttachments:\n" + msg.attachments.map((a: any) => `[File: ${a.name}]\n${a.content}`).join("\n\n")
           : "")
       }));
 
       // Add current message with current attachments
       let currentContent = message;
       if (attachments.length > 0) {
-        currentContent += "\n\nAttachments:\n" + attachments.map(a => `[File: ${a.name}]\n${a.content}`).join("\n\n");
+        currentContent += "\n\nAttachments:\n" + (attachments as any[]).map(a => `[File: ${a.name}]\n${a.content}`).join("\n\n");
       }
       anthropicMessages.push({ role: "user", content: currentContent });
 
@@ -100,7 +100,7 @@ export async function registerRoutes(
         messages: anthropicMessages,
       });
 
-      const assistantContent = response.content[0].text;
+      const assistantContent = response.content.find(block => block.type === 'text')?.text || "";
 
       // Save assistant message
       await storage.createMessage({

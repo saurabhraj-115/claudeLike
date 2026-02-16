@@ -89,3 +89,6 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
   }
   return url;
 }
+
+export type ChatInput = z.infer<typeof api.chat.send.input>;
+export type ChatResponse = z.infer<typeof api.chat.send.responses[200]>;
