@@ -23,7 +23,7 @@ export default function Chat() {
     }
   }, [conversation?.messages, sendMessageMutation.isPending]);
 
-  const handleSend = async (message: string) => {
+  const handleSend = async (message: string, attachments?: { name: string; content: string }[]) => {
     if (!id) return;
     
     const apiKey = localStorage.getItem("anthropic_api_key");
@@ -39,7 +39,8 @@ export default function Chat() {
     sendMessageMutation.mutate({
       message,
       conversationId: id,
-      apiKey
+      apiKey,
+      attachments
     }, {
       onError: (error) => {
         toast({
@@ -62,13 +63,8 @@ export default function Chat() {
     );
   }
 
-  // Combine real messages with optimistic user message if pending
   const displayMessages = [...(conversation?.messages || [])];
   
-  // If mutation is pending, we can optimistically show the user message
-  // Note: ideally we'd pass the optimistic message content in the mutation context
-  // but for simplicity we rely on the Loading state in MessageList for now.
-
   return (
     <div className="flex min-h-screen bg-[#FBFBF9]">
       <Sidebar />

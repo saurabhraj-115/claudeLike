@@ -42,6 +42,7 @@ export const api = {
       input: z.object({
         content: z.string(),
         role: z.enum(["user", "assistant"]),
+        attachments: z.array(z.object({ name: z.string(), content: z.string() })).optional(),
       }),
       responses: {
         201: z.custom<typeof messages.$inferSelect>(),
@@ -62,7 +63,8 @@ export const api = {
       input: z.object({
         message: z.string(),
         conversationId: z.number().optional(),
-        apiKey: z.string().optional(), // Passed from frontend settings
+        apiKey: z.string().optional(),
+        attachments: z.array(z.object({ name: z.string(), content: z.string() })).optional(),
       }),
       responses: {
         200: z.object({

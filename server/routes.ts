@@ -52,7 +52,7 @@ export async function registerRoutes(
   // Chat Endpoint
   app.post(api.chat.send.path, async (req, res) => {
     try {
-      const { message, conversationId, apiKey } = req.body;
+      const { message, conversationId, apiKey, attachments = [] } = req.body;
 
       if (!apiKey) {
         return res.status(401).json({ message: "Anthropic API Key is required." });
@@ -70,19 +70,28 @@ export async function registerRoutes(
       // Get history
       const history = await storage.getMessages(currentConversationId);
       
-      // Save user message
+      // Save user message with attachments
       await storage.createMessage({
         conversationId: currentConversationId,
         role: "user",
         content: message,
+        attachments: attachments,
       });
 
       // Prepare messages for Anthropic
       const anthropicMessages = history.map(msg => ({
         role: msg.role as "user" | "assistant",
-        content: msg.content
+        content: msg.content + (msg.attachments && msg.attachments.length > 0 
+          ? "\n\nAttachments:\n" + msg.attachments.map(a => `[File: ${a.name}]\n${a.content}`).join("\n\n")
+          : "")
       }));
-      anthropicMessages.push({ role: "user", content: message });
+
+      // Add current message with current attachments
+      let currentContent = message;
+      if (attachments.length > 0) {
+        currentContent += "\n\nAttachments:\n" + attachments.map(a => `[File: ${a.name}]\n${a.content}`).join("\n\n");
+      }
+      anthropicMessages.push({ role: "user", content: currentContent });
 
       // Call Anthropic API
       const response = await anthropic.messages.create({
@@ -98,6 +107,7 @@ export async function registerRoutes(
         conversationId: currentConversationId,
         role: "assistant",
         content: assistantContent,
+        attachments: [],
       });
 
       res.json({

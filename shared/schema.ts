@@ -14,6 +14,7 @@ export const messages = pgTable("messages", {
   conversationId: serial("conversation_id").references(() => conversations.id),
   role: text("role").notNull(), // 'user' or 'assistant'
   content: text("content").notNull(),
+  attachments: jsonb("attachments").$type<{ name: string; content: string }[]>().default([]),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

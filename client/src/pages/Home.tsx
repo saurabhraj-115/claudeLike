@@ -11,7 +11,7 @@ export default function Home() {
   const createConversationMutation = useCreateConversation();
   const { toast } = useToast();
 
-  const handleSend = async (message: string) => {
+  const handleSend = async (message: string, attachments?: { name: string; content: string }[]) => {
     const apiKey = localStorage.getItem("anthropic_api_key");
     if (!apiKey) {
       toast({
@@ -23,17 +23,15 @@ export default function Home() {
     }
 
     try {
-      // 1. Create conversation first
       const conversation = await createConversationMutation.mutateAsync(undefined);
       
-      // 2. Send message to new conversation
       await sendMessageMutation.mutateAsync({
         message,
         conversationId: conversation.id,
-        apiKey
+        apiKey,
+        attachments
       });
 
-      // 3. Redirect to new chat
       setLocation(`/chat/${conversation.id}`);
     } catch (error) {
       toast({
@@ -49,7 +47,7 @@ export default function Home() {
       <Sidebar />
       <main className="flex-1 ml-0 md:ml-[280px] flex flex-col h-screen relative">
         <div className="flex-1 flex flex-col items-center justify-center overflow-hidden">
-          <WelcomeScreen onPromptSelect={handleSend} />
+          <WelcomeScreen onPromptSelect={(msg) => handleSend(msg)} />
         </div>
         
         <div className="flex-shrink-0 bg-gradient-to-t from-[#FBFBF9] via-[#FBFBF9] to-transparent pt-10">

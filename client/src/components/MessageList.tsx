@@ -1,6 +1,6 @@
 import { Message } from "@shared/schema";
 import ReactMarkdown from "react-markdown";
-import { Bot, User as UserIcon, Copy, Check } from "lucide-react";
+import { Bot, User as UserIcon, Copy, Check, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -26,13 +26,12 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          key={msg.id || index} // Use index as fallback for optimistic updates
+          key={msg.id || index}
           className={cn(
             "flex gap-4 group",
             msg.role === "user" ? "flex-row-reverse" : "flex-row"
           )}
         >
-          {/* Avatar */}
           <div className={cn(
             "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-border/50",
             msg.role === "assistant" 
@@ -42,7 +41,6 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
             {msg.role === "assistant" ? <Bot className="w-5 h-5" /> : <UserIcon className="w-5 h-5" />}
           </div>
 
-          {/* Message Content */}
           <div className={cn(
             "flex flex-col max-w-[85%]",
             msg.role === "user" ? "items-end" : "items-start"
@@ -63,10 +61,21 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
               {msg.role === "assistant" ? (
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               ) : (
-                <p className="whitespace-pre-wrap font-sans">{msg.content}</p>
+                <div className="space-y-3">
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {msg.attachments.map((file, i) => (
+                        <div key={i} className="flex items-center gap-2 bg-white/50 border border-black/5 px-3 py-1.5 rounded-lg text-xs font-sans">
+                          <FileText className="w-3.5 h-3.5 text-[#DA7756]" />
+                          <span>{file.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="whitespace-pre-wrap font-sans">{msg.content}</p>
+                </div>
               )}
 
-              {/* Copy Button for Assistant */}
               {msg.role === "assistant" && (
                 <button
                   onClick={() => copyToClipboard(msg.content, msg.id)}
@@ -100,7 +109,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
           </div>
         </motion.div>
       )}
-      <div className="h-4" /> {/* Spacer */}
+      <div className="h-4" />
     </div>
   );
 }
