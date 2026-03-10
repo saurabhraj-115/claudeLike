@@ -95,7 +95,7 @@ export async function registerRoutes(
 
       // Call Anthropic API
       const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20240620",
+        model: "claude-opus-4-6",
         max_tokens: 1024,
         messages: anthropicMessages,
       });
