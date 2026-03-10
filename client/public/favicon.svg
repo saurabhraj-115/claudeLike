@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Claude Interface">
+  <rect width="128" height="128" rx="28" fill="#f6f3ea" />
+  <path d="M38 34h52c12.15 0 22 9.85 22 22v16c0 12.15-9.85 22-22 22H66l-18 14v-14H38c-12.15 0-22-9.85-22-22V56c0-12.15 9.85-22 22-22Z" fill="#DA7756"/>
+  <path d="M47 54h34M47 68h24" stroke="#fffaf3" stroke-width="8" stroke-linecap="round"/>
+</svg>

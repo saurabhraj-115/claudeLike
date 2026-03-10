@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
 import type { ChatAttachment } from "@/lib/chat";
+import type { Conversation } from "@shared/schema";
 
 // Fetch all conversations
 export function useConversations() {
@@ -104,7 +105,15 @@ export function useSendMessage() {
       return api.chat.send.responses[200].parse(await res.json());
     },
     onSuccess: (data, variables) => {
-      // Invalidate list to show new conversation if created
+      queryClient.setQueryData<Conversation[] | undefined>(
+        [api.conversations.list.path],
+        (current) =>
+          current?.map((conversation) =>
+            conversation.id === data.conversationId
+              ? { ...conversation, title: data.title }
+              : conversation
+          )
+      );
       queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
       
       // Invalidate specific conversation to show new messages

@@ -107,10 +107,10 @@ export async function registerRoutes(
               title,
             })
           )
-        : Promise.resolve();
+        : Promise.resolve(conversation);
 
       // Call Anthropic API
-      const [response] = await Promise.all([
+      const [response, updatedConversation] = await Promise.all([
         anthropic.messages.create({
           model: "claude-opus-4-6",
           max_tokens: 1024,
@@ -132,6 +132,7 @@ export async function registerRoutes(
       res.json({
         message: assistantContent,
         conversationId: currentConversationId,
+        title: updatedConversation?.title || conversation?.title || buildFallbackConversationTitle(message),
       });
 
     } catch (error: any) {

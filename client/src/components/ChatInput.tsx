@@ -3,6 +3,26 @@ import TextareaAutosize from "react-textarea-autosize";
 import { Button } from "@/components/ui/button";
 import { Send, Paperclip, X, FileText } from "lucide-react";
 import type { ChatAttachment } from "@/lib/chat";
+import { useToast } from "@/hooks/use-toast";
+
+const MAX_ATTACHMENT_SIZE = 1024 * 1024;
+const ACCEPTED_FILE_TYPES = [
+  ".txt",
+  ".md",
+  ".json",
+  ".csv",
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".py",
+  ".html",
+  ".css",
+  ".sql",
+  ".xml",
+  ".yaml",
+  ".yml",
+];
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -13,6 +33,8 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleSubmit = () => {
     if ((!input.trim() && attachments.length === 0) || isLoading) return;
@@ -40,6 +62,48 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
     setAttachments(attachments.filter((_, i) => i !== index));
   };
 
+  const handleAttachmentClick = () => {
+    if (isLoading) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) {
+      return;
+    }
+
+    const nextAttachments: ChatAttachment[] = [];
+
+    for (const file of files) {
+      if (file.size > MAX_ATTACHMENT_SIZE) {
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds the 1 MB limit.`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      try {
+        const content = await file.text();
+        nextAttachments.push({ name: file.name, content });
+      } catch {
+        toast({
+          title: "Unsupported file",
+          description: `Could not read ${file.name} as text.`,
+          variant: "destructive",
+        });
+      }
+    }
+
+    if (nextAttachments.length > 0) {
+      setAttachments((current) => [...current, ...nextAttachments]);
+    }
+
+    event.target.value = "";
+  };
+
   // Focus input on mount
   useEffect(() => {
     textareaRef.current?.focus();
@@ -47,6 +111,15 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
 
   return (
     <div className="w-full max-w-3xl mx-auto p-4 pb-8">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_FILE_TYPES.join(",")}
+        multiple
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 px-2">
@@ -65,13 +138,13 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
         </div>
       )}
 
-      <div className="relative group bg-card rounded-2xl shadow-sm border border-border/50 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-300">
+      <div className="relative group bg-card rounded-2xl shadow-sm border border-border/50 focus-within:border-border/70 transition-all duration-300">
         <TextareaAutosize
           ref={textareaRef}
           minRows={1}
           maxRows={8}
           placeholder="Message Claude..."
-          className="w-full resize-none bg-transparent border-0 focus:ring-0 p-4 pr-12 text-base placeholder:text-muted-foreground/60 font-sans"
+          className="w-full resize-none bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-4 pr-12 text-base placeholder:text-muted-foreground/60 font-sans"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -97,7 +170,9 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
             size="icon" 
             variant="ghost" 
             className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-transparent"
-            disabled
+            onClick={handleAttachmentClick}
+            disabled={isLoading}
+            type="button"
           >
             <Paperclip className="w-4 h-4" />
           </Button>

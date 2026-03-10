@@ -92,10 +92,8 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
 const port = parseInt(process.env.PORT || "5000", 10);
 
-// Replit / production needs 0.0.0.0
-// Local macOS dev must use localhost
 const host =
-  process.env.REPL_ID || process.env.NODE_ENV === "production"
+  process.env.NODE_ENV === "production"
     ? "0.0.0.0"
     : "127.0.0.1";
 

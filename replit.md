@@ -65,5 +65,5 @@ Defined in `shared/routes.ts` with Zod schemas for validation:
 - **PostgreSQL** — Primary database, connected via `DATABASE_URL` environment variable. Uses `pg` (node-postgres) driver with connection pooling
 - **Anthropic API** — Claude AI model access via `@anthropic-ai/sdk`. API key is provided by the user and stored in localStorage (key: `anthropic_api_key`)
 - **Google Fonts** — DM Sans, Merriweather, JetBrains Mono, Geist Mono, Fira Code, Architects Daughter loaded via CDN
-- **Replit Plugins** — `@replit/vite-plugin-runtime-error-modal`, `@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner` for development tooling on Replit
+- Development-only Vite plugins were removed to keep the repo host-neutral.
 - **connect-pg-simple** — PostgreSQL session store (available but sessions not actively used since there's no auth)
