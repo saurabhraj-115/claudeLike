@@ -15,13 +15,14 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "6mb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "6mb" }));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -64,6 +65,10 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+    if (err?.type === "entity.too.large") {
+      return res.status(413).json({ message: "Attachment is too large for this request." });
+    }
+
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 

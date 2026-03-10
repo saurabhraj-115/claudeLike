@@ -14,7 +14,18 @@ export const messages = pgTable("messages", {
   conversationId: serial("conversation_id").references(() => conversations.id),
   role: text("role").notNull(), // 'user' or 'assistant'
   content: text("content").notNull(),
-  attachments: jsonb("attachments").$type<{ name: string; content: string }[]>().default([]),
+  attachments: jsonb("attachments").$type<
+    (
+      | { kind?: "text"; name: string; content: string }
+      | {
+          kind: "image";
+          name: string;
+          content: string;
+          mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+          previewUrl?: string;
+        }
+    )[]
+  >().default([]),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

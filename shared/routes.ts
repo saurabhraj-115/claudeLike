@@ -1,6 +1,21 @@
 import { z } from "zod";
 import { insertConversationSchema, insertMessageSchema, conversations, messages } from "./schema";
 
+const attachmentSchema = z.union([
+  z.object({
+    kind: z.literal("text").optional(),
+    name: z.string(),
+    content: z.string(),
+  }),
+  z.object({
+    kind: z.literal("image"),
+    name: z.string(),
+    content: z.string(),
+    mediaType: z.enum(["image/jpeg", "image/png", "image/gif", "image/webp"]),
+    previewUrl: z.string().optional(),
+  }),
+]);
+
 export const api = {
   conversations: {
     list: {
@@ -42,7 +57,7 @@ export const api = {
       input: z.object({
         content: z.string(),
         role: z.enum(["user", "assistant"]),
-        attachments: z.array(z.object({ name: z.string(), content: z.string() })).optional(),
+        attachments: z.array(attachmentSchema).optional(),
       }),
       responses: {
         201: z.custom<typeof messages.$inferSelect>(),
@@ -64,13 +79,13 @@ export const api = {
         message: z.string(),
         conversationId: z.number().optional(),
         apiKey: z.string().optional(),
-        attachments: z.array(z.object({ name: z.string(), content: z.string() })).optional(),
+        attachments: z.array(attachmentSchema).optional(),
       }),
       responses: {
         200: z.object({
           message: z.string(),
           conversationId: z.number(),
-          title: z.string(),
+          title: z.string().optional(),
         }),
         401: z.object({ message: z.string() }),
         500: z.object({ message: z.string() }),
