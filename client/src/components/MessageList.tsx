@@ -36,7 +36,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
             "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-border/50",
             msg.role === "assistant" 
               ? "bg-[#DA7756] text-white" 
-              : "bg-white text-muted-foreground"
+              : "bg-card text-muted-foreground"
           )}>
             {msg.role === "assistant" ? <Bot className="w-5 h-5" /> : <UserIcon className="w-5 h-5" />}
           </div>
@@ -55,8 +55,8 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
             <div className={cn(
               "relative px-5 py-3.5 rounded-2xl text-[15px] leading-relaxed shadow-sm",
               msg.role === "user" 
-                ? "bg-[#F2F0E9] text-foreground rounded-tr-sm" 
-                : "bg-white text-foreground border border-border/40 rounded-tl-sm font-serif prose prose-neutral max-w-none"
+                ? "bg-secondary text-foreground rounded-tr-sm" 
+                : "bg-card text-foreground border border-border/40 rounded-tl-sm font-serif prose prose-neutral dark:prose-invert max-w-none"
             )}>
               {msg.role === "assistant" ? (
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -65,7 +65,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
                   {msg.attachments && msg.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
                       {msg.attachments.map((file, i) => (
-                        <div key={i} className="flex items-center gap-2 bg-white/50 border border-black/5 px-3 py-1.5 rounded-lg text-xs font-sans">
+                        <div key={i} className="flex items-center gap-2 bg-background/70 border border-border/60 px-3 py-1.5 rounded-lg text-xs font-sans">
                           <FileText className="w-3.5 h-3.5 text-[#DA7756]" />
                           <span>{file.name}</span>
                         </div>
@@ -102,7 +102,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
           <div className="w-8 h-8 rounded-lg bg-[#DA7756] text-white flex items-center justify-center shrink-0 shadow-sm">
             <Bot className="w-5 h-5" />
           </div>
-          <div className="bg-white px-5 py-4 rounded-2xl rounded-tl-sm border border-border/40 shadow-sm flex items-center gap-1.5 h-12">
+          <div className="bg-card px-5 py-4 rounded-2xl rounded-tl-sm border border-border/40 shadow-sm flex items-center gap-1.5 h-12">
             <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
             <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
             <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce"></span>

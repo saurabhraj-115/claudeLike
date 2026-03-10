@@ -10,6 +10,10 @@ server/public
 .env.*
 !.env.example
 
+# local keys
+D
+D.pub
+
 # OS / tooling junk
 .DS_Store
 .local/
@@ -26,5 +30,4 @@ yarn-error.log*
 # editor
 .vscode
 .idea
-
 

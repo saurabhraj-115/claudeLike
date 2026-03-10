@@ -4,7 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, ShieldCheck } from "lucide-react";
+import { KeyRound, MoonStar, ShieldCheck } from "lucide-react";
+import { useTheme } from "next-themes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SettingsModalProps {
   open: boolean;
@@ -14,6 +22,7 @@ interface SettingsModalProps {
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [apiKey, setApiKey] = useState("");
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const storedKey = localStorage.getItem("anthropic_api_key");
@@ -58,6 +67,26 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <ShieldCheck className="w-3 h-3 text-green-600" />
               Your key is never stored on our servers, only passed through for the request.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="theme">Appearance</Label>
+            <Select value={theme ?? "system"} onValueChange={setTheme}>
+              <SelectTrigger id="theme">
+                <div className="flex items-center gap-2">
+                  <MoonStar className="h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Choose theme" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Theme preference is stored locally in your browser.
             </p>
           </div>
         </div>
