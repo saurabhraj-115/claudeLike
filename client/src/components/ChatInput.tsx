@@ -2,16 +2,16 @@ import { useState, useRef, useEffect } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { Button } from "@/components/ui/button";
 import { Send, Paperclip, X, FileText } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import type { ChatAttachment } from "@/lib/chat";
 
 interface ChatInputProps {
-  onSend: (message: string, attachments?: { name: string; content: string }[]) => void;
+  onSend: (message: string, attachments?: ChatAttachment[]) => void;
   isLoading: boolean;
 }
 
 export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const [input, setInput] = useState("");
-  const [attachments, setAttachments] = useState<{ name: string; content: string }[]>([]);
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = () => {
@@ -51,12 +51,12 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 px-2">
           {attachments.map((file, i) => (
-            <div key={i} className="flex items-center gap-2 bg-[#F2F0E9] border border-border/40 px-3 py-1.5 rounded-lg text-sm group relative">
+            <div key={i} className="flex items-center gap-2 bg-secondary border border-border/40 px-3 py-1.5 rounded-lg text-sm group relative">
               <FileText className="w-4 h-4 text-[#DA7756]" />
               <span className="truncate max-w-[150px]">{file.name}</span>
               <button 
                 onClick={() => removeAttachment(i)}
-                className="hover:bg-black/5 rounded-full p-0.5"
+                className="hover:bg-foreground/5 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -65,7 +65,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
         </div>
       )}
 
-      <div className="relative group bg-white rounded-2xl shadow-sm border border-border/50 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-300">
+      <div className="relative group bg-card rounded-2xl shadow-sm border border-border/50 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-300">
         <TextareaAutosize
           ref={textareaRef}
           minRows={1}

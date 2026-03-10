@@ -8,7 +8,11 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "backfill:conversation-titles": "tsx script/backfill-conversation-titles.ts",
+    "retitle:generic": "tsx script/backfill-conversation-titles.ts generic",
+    "retitle:fallback-match": "tsx script/backfill-conversation-titles.ts fallback-match",
+    "retitle:all": "tsx script/backfill-conversation-titles.ts all"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",

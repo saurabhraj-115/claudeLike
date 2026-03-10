@@ -13,6 +13,7 @@ export interface IStorage {
   getConversations(): Promise<Conversation[]>;
   getConversation(id: number): Promise<Conversation | undefined>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
+  updateConversation(id: number, conversation: Partial<InsertConversation>): Promise<Conversation>;
   deleteConversation(id: number): Promise<void>;
   
   getMessages(conversationId: number): Promise<Message[]>;
@@ -31,6 +32,15 @@ export class DatabaseStorage implements IStorage {
 
   async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
     const [conversation] = await db.insert(conversations).values(insertConversation).returning();
+    return conversation;
+  }
+
+  async updateConversation(id: number, update: Partial<InsertConversation>): Promise<Conversation> {
+    const [conversation] = await db
+      .update(conversations)
+      .set(update)
+      .where(eq(conversations.id, id))
+      .returning();
     return conversation;
   }
 

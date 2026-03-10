@@ -56,7 +56,7 @@ export function WelcomeScreen({ onPromptSelect }: WelcomeScreenProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: idx * 0.1 }}
             onClick={() => onPromptSelect(prompt.text)}
-            className="text-left p-4 bg-white hover:bg-white/80 border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
+            className="text-left p-4 bg-card hover:bg-card/80 border border-border/50 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
           >
             <div className="flex items-start gap-3">
               <div className="p-2 bg-muted/50 rounded-lg group-hover:bg-muted transition-colors">

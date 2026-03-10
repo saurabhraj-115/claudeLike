@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
+import { buildFallbackConversationTitle, generateConversationTitle } from "./conversation-title";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -63,9 +64,12 @@ export async function registerRoutes(
       // Handle conversation ID
       let currentConversationId = conversationId;
       if (!currentConversationId) {
-        const newConv = await storage.createConversation({ title: message.slice(0, 30) + "..." });
+        const newConv = await storage.createConversation({ title: buildFallbackConversationTitle(message) });
         currentConversationId = newConv.id;
       }
+
+      const conversation = await storage.getConversation(currentConversationId);
+      const shouldGenerateTitle = !!conversation && (!conversation.title || conversation.title === "New Chat");
 
       // Get history
       const history = await storage.getMessages(currentConversationId);
@@ -93,12 +97,27 @@ export async function registerRoutes(
       }
       anthropicMessages.push({ role: "user", content: currentContent });
 
+      const titlePromise = shouldGenerateTitle
+        ? generateConversationTitle({
+            anthropic,
+            message,
+            attachments,
+          }).then((title) =>
+            storage.updateConversation(currentConversationId, {
+              title,
+            })
+          )
+        : Promise.resolve();
+
       // Call Anthropic API
-      const response = await anthropic.messages.create({
-        model: "claude-opus-4-6",
-        max_tokens: 1024,
-        messages: anthropicMessages,
-      });
+      const [response] = await Promise.all([
+        anthropic.messages.create({
+          model: "claude-opus-4-6",
+          max_tokens: 1024,
+          messages: anthropicMessages,
+        }),
+        titlePromise,
+      ]);
 
       const assistantContent = response.content.find(block => block.type === 'text')?.text || "";
 

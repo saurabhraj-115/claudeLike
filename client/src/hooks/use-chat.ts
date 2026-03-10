@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
+import type { ChatAttachment } from "@/lib/chat";
 
 // Fetch all conversations
 export function useConversations() {
@@ -83,16 +84,18 @@ export function useSendMessage() {
     mutationFn: async ({ 
       message, 
       conversationId, 
-      apiKey 
+      apiKey,
+      attachments = [],
     }: { 
       message: string, 
       conversationId?: number, 
-      apiKey?: string 
+      apiKey?: string,
+      attachments?: ChatAttachment[],
     }) => {
       const res = await fetch(api.chat.send.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, conversationId, apiKey }),
+        body: JSON.stringify({ message, conversationId, apiKey, attachments }),
       });
       
       if (res.status === 401) throw new Error("Invalid API Key");

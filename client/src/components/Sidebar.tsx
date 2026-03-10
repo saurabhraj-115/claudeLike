@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useConversations, useCreateConversation, useDeleteConversation } from "@/hooks/use-chat";
 import { Button } from "@/components/ui/button";
-import { Plus, MessageSquare, Trash2, Settings, Menu, X } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Settings, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -38,7 +38,7 @@ export function Sidebar() {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-[#F2F1EA] border-r border-border/50">
+    <div className="flex flex-col h-full bg-secondary/70 border-r border-border/50 backdrop-blur-sm">
       <div className="p-4">
         <Button 
           onClick={handleNewChat}
@@ -57,8 +57,8 @@ export function Sidebar() {
               className={cn(
                 "group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 text-sm",
                 location === `/chat/${conv.id}` 
-                  ? "bg-white shadow-sm text-foreground font-medium" 
-                  : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
+                  ? "bg-card shadow-sm text-foreground font-medium" 
+                  : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
               )}
             >
               <div className="flex items-center gap-3 overflow-hidden">
@@ -73,7 +73,7 @@ export function Sidebar() {
               
               <button 
                 onClick={(e) => handleDelete(e, conv.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 hover:text-red-600 rounded transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 hover:text-destructive rounded transition-all"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -82,12 +82,12 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="p-4 border-t border-border/10 bg-black/5">
+      <div className="p-4 border-t border-border/20 bg-foreground/5">
         <div 
           onClick={() => setIsSettingsOpen(true)}
-          className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/50 transition-colors"
+          className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-background/70 transition-colors"
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 border border-black/5 flex items-center justify-center text-xs font-bold text-indigo-700">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-border/60 flex items-center justify-center text-xs font-bold text-primary">
             JD
           </div>
           <div className="flex flex-col text-sm">
@@ -113,7 +113,7 @@ export function Sidebar() {
       <div className="md:hidden fixed top-4 left-4 z-50">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="bg-[#F2F1EA] shadow-sm border border-border/50">
+            <Button variant="ghost" size="icon" className="bg-secondary/90 shadow-sm border border-border/50 backdrop-blur-sm">
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
