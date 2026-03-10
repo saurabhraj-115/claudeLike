@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/Sidebar";
 import { ChatInput } from "@/components/ChatInput";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
-import { useSendMessage, useCreateConversation } from "@/hooks/use-chat";
+import { useSendMessage } from "@/hooks/use-chat";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import type { ChatAttachment } from "@/lib/chat";
@@ -9,7 +9,6 @@ import type { ChatAttachment } from "@/lib/chat";
 export default function Home() {
   const [, setLocation] = useLocation();
   const sendMessageMutation = useSendMessage();
-  const createConversationMutation = useCreateConversation();
   const { toast } = useToast();
 
   const handleSend = async (message: string, attachments?: ChatAttachment[]) => {
@@ -24,16 +23,13 @@ export default function Home() {
     }
 
     try {
-      const conversation = await createConversationMutation.mutateAsync(undefined);
-      
-      await sendMessageMutation.mutateAsync({
+      const response = await sendMessageMutation.mutateAsync({
         message,
-        conversationId: conversation.id,
         apiKey,
         attachments: attachments || []
       } as any);
 
-      setLocation(`/chat/${conversation.id}`);
+      setLocation(`/chat/${response.conversationId}`);
     } catch (error) {
       toast({
         title: "Error",
@@ -54,7 +50,7 @@ export default function Home() {
         <div className="flex-shrink-0 bg-gradient-to-t from-background via-background to-transparent pt-10">
           <ChatInput 
             onSend={handleSend} 
-            isLoading={createConversationMutation.isPending || sendMessageMutation.isPending} 
+            isLoading={sendMessageMutation.isPending} 
           />
         </div>
       </main>

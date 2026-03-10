@@ -6,6 +6,60 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildFallbackConversationTitle, generateConversationTitle } from "./conversation-title";
 
+const MAX_RESPONSE_TOKENS = 4096;
+const MAX_CONTINUATIONS = 3;
+
+type ChatAttachment =
+  | { kind?: "text"; name: string; content: string }
+  | {
+      kind: "image";
+      name: string;
+      content: string;
+      mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+      previewUrl?: string;
+    };
+
+function isImageAttachment(
+  attachment: ChatAttachment | { kind?: string; mediaType?: string },
+): attachment is Extract<ChatAttachment, { kind: "image" }> {
+  return attachment.kind === "image";
+}
+
+function buildUserContentBlocks(message: string, attachments: ChatAttachment[] = []): Anthropic.Messages.ContentBlockParam[] {
+  const blocks: Anthropic.Messages.ContentBlockParam[] = [];
+  const textAttachments = attachments.filter((attachment) => !isImageAttachment(attachment));
+  const imageAttachments = attachments.filter((attachment) => isImageAttachment(attachment));
+
+  let textContent = message;
+  if (textAttachments.length > 0) {
+    textContent +=
+      "\n\nAttachments:\n" +
+      textAttachments
+        .map((attachment) => `[File: ${attachment.name}]\n${attachment.content}`)
+        .join("\n\n");
+  }
+
+  if (textContent.trim()) {
+    blocks.push({
+      type: "text",
+      text: textContent,
+    });
+  }
+
+  for (const attachment of imageAttachments) {
+    blocks.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: attachment.mediaType,
+        data: attachment.content,
+      },
+    });
+  }
+
+  return blocks;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -83,19 +137,19 @@ export async function registerRoutes(
       });
 
       // Prepare messages for Anthropic
-      const anthropicMessages: Anthropic.Messages.MessageParam[] = history.map(msg => ({
+      const anthropicMessages: Anthropic.Messages.MessageParam[] = history.map((msg) => ({
         role: msg.role as "user" | "assistant",
-        content: msg.content + (msg.attachments && msg.attachments.length > 0 
-          ? "\n\nAttachments:\n" + msg.attachments.map((a: any) => `[File: ${a.name}]\n${a.content}`).join("\n\n")
-          : "")
+        content:
+          msg.role === "user"
+            ? buildUserContentBlocks(msg.content, (msg.attachments || []) as ChatAttachment[])
+            : msg.content,
       }));
 
       // Add current message with current attachments
-      let currentContent = message;
-      if (attachments.length > 0) {
-        currentContent += "\n\nAttachments:\n" + (attachments as any[]).map(a => `[File: ${a.name}]\n${a.content}`).join("\n\n");
-      }
-      anthropicMessages.push({ role: "user", content: currentContent });
+      anthropicMessages.push({
+        role: "user",
+        content: buildUserContentBlocks(message, attachments as ChatAttachment[]),
+      });
 
       const titlePromise = shouldGenerateTitle
         ? generateConversationTitle({
@@ -109,17 +163,41 @@ export async function registerRoutes(
           )
         : Promise.resolve(conversation);
 
-      // Call Anthropic API
-      const [response, updatedConversation] = await Promise.all([
-        anthropic.messages.create({
-          model: "claude-opus-4-6",
-          max_tokens: 1024,
-          messages: anthropicMessages,
-        }),
+      // Call Anthropic API, continuing automatically if the model stops at max_tokens.
+      const [assistantContent, updatedConversation] = await Promise.all([
+        (async () => {
+          const requestMessages = [...anthropicMessages];
+          let fullText = "";
+
+          for (let attempt = 0; attempt <= MAX_CONTINUATIONS; attempt += 1) {
+            const response = await anthropic.messages.create({
+              model: "claude-opus-4-6",
+              max_tokens: MAX_RESPONSE_TOKENS,
+              messages: requestMessages,
+            });
+
+            const chunk = response.content
+              .filter((block) => block.type === "text")
+              .map((block) => block.text)
+              .join("");
+
+            fullText += chunk;
+
+            if (response.stop_reason !== "max_tokens") {
+              return fullText;
+            }
+
+            requestMessages.push({ role: "assistant", content: chunk });
+            requestMessages.push({
+              role: "user",
+              content: "Continue exactly from where you stopped. Do not repeat prior text.",
+            });
+          }
+
+          return fullText;
+        })(),
         titlePromise,
       ]);
-
-      const assistantContent = response.content.find(block => block.type === 'text')?.text || "";
 
       // Save assistant message
       await storage.createMessage({

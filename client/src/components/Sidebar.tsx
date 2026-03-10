@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useConversations, useCreateConversation, useDeleteConversation } from "@/hooks/use-chat";
+import { useConversations, useDeleteConversation } from "@/hooks/use-chat";
 import { Button } from "@/components/ui/button";
 import { Plus, MessageSquare, Trash2, Settings, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,16 +11,11 @@ import { SettingsModal } from "./SettingsModal";
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   const { data: conversations } = useConversations();
-  const createMutation = useCreateConversation();
   const deleteMutation = useDeleteConversation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const handleNewChat = async () => {
-    createMutation.mutate(undefined, {
-      onSuccess: (newConv) => {
-        setLocation(`/chat/${newConv.id}`);
-      }
-    });
+  const handleNewChat = () => {
+    setLocation("/");
   };
 
   const handleDelete = (e: React.MouseEvent, id: number) => {
@@ -42,7 +37,6 @@ export function Sidebar() {
       <div className="p-4">
         <Button 
           onClick={handleNewChat}
-          disabled={createMutation.isPending}
           className="w-full justify-start gap-2 bg-[#DA7756] hover:bg-[#C56545] text-white font-medium shadow-sm h-11 rounded-lg transition-all"
         >
           <Plus className="w-5 h-5" />

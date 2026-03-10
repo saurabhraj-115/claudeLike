@@ -93,10 +93,21 @@ export function useSendMessage() {
       apiKey?: string,
       attachments?: ChatAttachment[],
     }) => {
+      const requestAttachments = attachments.map((attachment) =>
+        attachment.kind === "image"
+          ? {
+              kind: "image" as const,
+              name: attachment.name,
+              content: attachment.content,
+              mediaType: attachment.mediaType,
+            }
+          : attachment
+      );
+
       const res = await fetch(api.chat.send.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, conversationId, apiKey, attachments }),
+        body: JSON.stringify({ message, conversationId, apiKey, attachments: requestAttachments }),
       });
       
       if (res.status === 401) throw new Error("Invalid API Key");
@@ -105,15 +116,17 @@ export function useSendMessage() {
       return api.chat.send.responses[200].parse(await res.json());
     },
     onSuccess: (data, variables) => {
-      queryClient.setQueryData<Conversation[] | undefined>(
-        [api.conversations.list.path],
-        (current) =>
-          current?.map((conversation) =>
-            conversation.id === data.conversationId
-              ? { ...conversation, title: data.title }
-              : conversation
-          )
-      );
+      if (data.title) {
+        queryClient.setQueryData<Conversation[] | undefined>(
+          [api.conversations.list.path],
+          (current) =>
+            current?.map((conversation) =>
+              conversation.id === data.conversationId
+                ? { ...conversation, title: data.title }
+                : conversation
+            )
+        );
+      }
       queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
       
       // Invalidate specific conversation to show new messages

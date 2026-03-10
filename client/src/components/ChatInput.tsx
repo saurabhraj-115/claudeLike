@@ -1,12 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, FileText } from "lucide-react";
-import type { ChatAttachment } from "@/lib/chat";
+import { Send, Paperclip, X, FileText, Image as ImageIcon } from "lucide-react";
+import type { ChatAttachment, ImageAttachment } from "@/lib/chat";
 import { useToast } from "@/hooks/use-toast";
+import { extractDocxText } from "@/lib/docx";
+import { arrayBufferToBase64, isImageAttachment } from "@/lib/chat";
 
 const MAX_ATTACHMENT_SIZE = 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  ".docx",
   ".txt",
   ".md",
   ".json",
@@ -34,6 +41,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentsRef = useRef<ChatAttachment[]>([]);
   const { toast } = useToast();
 
   const handleSubmit = () => {
@@ -59,7 +67,14 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   };
 
   const removeAttachment = (index: number) => {
-    setAttachments(attachments.filter((_, i) => i !== index));
+    setAttachments((current) => {
+      const attachment = current[index];
+      if (attachment && isImageAttachment(attachment) && attachment.previewUrl) {
+        URL.revokeObjectURL(attachment.previewUrl);
+      }
+
+      return current.filter((_, i) => i !== index);
+    });
   };
 
   const handleAttachmentClick = () => {
@@ -86,12 +101,40 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
       }
 
       try {
-        const content = await file.text();
+        if (file.type.startsWith("image/")) {
+          if (!["image/png", "image/jpeg", "image/gif", "image/webp"].includes(file.type)) {
+            throw new Error("Unsupported image type");
+          }
+
+          const buffer = await file.arrayBuffer();
+          nextAttachments.push({
+            kind: "image",
+            name: file.name,
+            content: arrayBufferToBase64(buffer),
+            mediaType: file.type as ImageAttachment["mediaType"],
+            previewUrl: URL.createObjectURL(file),
+          });
+          continue;
+        }
+
+        const content = file.name.toLowerCase().endsWith(".docx")
+          ? await extractDocxText(file)
+          : await file.text();
+
+        if (!content.trim()) {
+          toast({
+            title: "Empty attachment",
+            description: `${file.name} did not contain readable text.`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
         nextAttachments.push({ name: file.name, content });
       } catch {
         toast({
           title: "Unsupported file",
-          description: `Could not read ${file.name} as text.`,
+          description: `Could not extract readable text from ${file.name}.`,
           variant: "destructive",
         });
       }
@@ -104,9 +147,74 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
     event.target.value = "";
   };
 
+  const handlePaste = async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(event.clipboardData.items || []);
+    const imageItems = items.filter((item) => item.type.startsWith("image/"));
+
+    if (!imageItems.length) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextAttachments: ChatAttachment[] = [];
+
+    for (const item of imageItems) {
+      const file = item.getAsFile();
+      if (!file) {
+        continue;
+      }
+
+      if (file.size > MAX_ATTACHMENT_SIZE) {
+        toast({
+          title: "Image too large",
+          description: `${file.name || "Pasted image"} exceeds the 1 MB limit.`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      if (!["image/png", "image/jpeg", "image/gif", "image/webp"].includes(file.type)) {
+        toast({
+          title: "Unsupported image",
+          description: `${file.type || "Clipboard image"} is not supported.`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      const buffer = await file.arrayBuffer();
+      nextAttachments.push({
+        kind: "image",
+        name: file.name || `pasted-image-${Date.now()}.png`,
+        content: arrayBufferToBase64(buffer),
+        mediaType: file.type as ImageAttachment["mediaType"],
+        previewUrl: URL.createObjectURL(file),
+      });
+    }
+
+    if (nextAttachments.length > 0) {
+      setAttachments((current) => [...current, ...nextAttachments]);
+    }
+  };
+
   // Focus input on mount
   useEffect(() => {
     textareaRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    attachmentsRef.current = attachments;
+  }, [attachments]);
+
+  useEffect(() => {
+    return () => {
+      attachmentsRef.current.forEach((attachment) => {
+        if (isImageAttachment(attachment) && attachment.previewUrl) {
+          URL.revokeObjectURL(attachment.previewUrl);
+        }
+      });
+    };
   }, []);
 
   return (
@@ -125,8 +233,20 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
         <div className="flex flex-wrap gap-2 mb-2 px-2">
           {attachments.map((file, i) => (
             <div key={i} className="flex items-center gap-2 bg-secondary border border-border/40 px-3 py-1.5 rounded-lg text-sm group relative">
-              <FileText className="w-4 h-4 text-[#DA7756]" />
-              <span className="truncate max-w-[150px]">{file.name}</span>
+              {isImageAttachment(file) && file.previewUrl ? (
+                <img src={file.previewUrl} alt={file.name} className="h-10 w-10 rounded object-cover" />
+              ) : (
+                <FileText className="w-4 h-4 text-[#DA7756]" />
+              )}
+              <div className="flex flex-col min-w-0">
+                <span className="truncate max-w-[150px]">{file.name}</span>
+                {isImageAttachment(file) && (
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <ImageIcon className="w-3 h-3" />
+                    Image
+                  </span>
+                )}
+              </div>
               <button 
                 onClick={() => removeAttachment(i)}
                 className="hover:bg-foreground/5 rounded-full p-0.5"
@@ -148,6 +268,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           disabled={isLoading}
         />
         
