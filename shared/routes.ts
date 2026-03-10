@@ -70,6 +70,7 @@ export const api = {
         200: z.object({
           message: z.string(),
           conversationId: z.number(),
+          title: z.string(),
         }),
         401: z.object({ message: z.string() }),
         500: z.object({ message: z.string() }),
