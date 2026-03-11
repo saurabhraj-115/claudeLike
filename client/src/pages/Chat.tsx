@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { Message } from "@shared/schema";
 import type { ChatAttachment } from "@/lib/chat";
+import { DEFAULT_MODEL } from "@/lib/models";
 
 export default function Chat() {
   const [, params] = useRoute("/chat/:id");
@@ -48,6 +49,7 @@ export default function Chat() {
     if (!id) return;
     
     const apiKey = localStorage.getItem("anthropic_api_key");
+    const model = localStorage.getItem("anthropic_model") || DEFAULT_MODEL;
     if (!apiKey) {
       toast({
         title: "API Key Missing",
@@ -71,6 +73,7 @@ export default function Chat() {
       message,
       conversationId: id,
       apiKey,
+      model,
       attachments: attachments || []
     } as any, {
       onError: (error) => {

@@ -24,10 +24,12 @@ function normalizeGeneratedTitle(title: string) {
 
 export async function generateConversationTitle({
   anthropic,
+  model,
   message,
   attachments = [],
 }: {
   anthropic: Anthropic;
+  model: string;
   message: string;
   attachments?: { name: string; content: string }[];
 }) {
@@ -37,7 +39,7 @@ export async function generateConversationTitle({
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-6",
+      model,
       max_tokens: 24,
       temperature: 0.2,
       system:

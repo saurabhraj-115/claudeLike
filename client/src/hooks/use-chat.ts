@@ -86,11 +86,13 @@ export function useSendMessage() {
       message, 
       conversationId, 
       apiKey,
+      model,
       attachments = [],
     }: { 
       message: string, 
       conversationId?: number, 
       apiKey?: string,
+      model?: string,
       attachments?: ChatAttachment[],
     }) => {
       const requestAttachments = attachments.map((attachment) =>
@@ -107,7 +109,7 @@ export function useSendMessage() {
       const res = await fetch(api.chat.send.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, conversationId, apiKey, attachments: requestAttachments }),
+        body: JSON.stringify({ message, conversationId, apiKey, model, attachments: requestAttachments }),
       });
       
       if (res.status === 401) throw new Error("Invalid API Key");

@@ -5,6 +5,7 @@ import { useSendMessage } from "@/hooks/use-chat";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import type { ChatAttachment } from "@/lib/chat";
+import { DEFAULT_MODEL } from "@/lib/models";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -13,6 +14,7 @@ export default function Home() {
 
   const handleSend = async (message: string, attachments?: ChatAttachment[]) => {
     const apiKey = localStorage.getItem("anthropic_api_key");
+    const model = localStorage.getItem("anthropic_model") || DEFAULT_MODEL;
     if (!apiKey) {
       toast({
         title: "API Key Missing",
@@ -26,6 +28,7 @@ export default function Home() {
       const response = await sendMessageMutation.mutateAsync({
         message,
         apiKey,
+        model,
         attachments: attachments || []
       } as any);
 

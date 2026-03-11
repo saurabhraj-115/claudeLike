@@ -107,7 +107,13 @@ export async function registerRoutes(
   // Chat Endpoint
   app.post(api.chat.send.path, async (req, res) => {
     try {
-      const { message, conversationId, apiKey, attachments = [] } = req.body;
+      const {
+        message,
+        conversationId,
+        apiKey,
+        model = "claude-sonnet-4-20250514",
+        attachments = [],
+      } = req.body;
 
       if (!apiKey) {
         return res.status(401).json({ message: "Anthropic API Key is required." });
@@ -154,6 +160,7 @@ export async function registerRoutes(
       const titlePromise = shouldGenerateTitle
         ? generateConversationTitle({
             anthropic,
+            model,
             message,
             attachments,
           }).then((title) =>
@@ -171,7 +178,7 @@ export async function registerRoutes(
 
           for (let attempt = 0; attempt <= MAX_CONTINUATIONS; attempt += 1) {
             const response = await anthropic.messages.create({
-              model: "claude-opus-4-6",
+              model,
               max_tokens: MAX_RESPONSE_TOKENS,
               messages: requestMessages,
             });
