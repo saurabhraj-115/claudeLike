@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CLAUDE_MODELS, DEFAULT_MODEL } from "@/lib/models";
 
 interface SettingsModalProps {
   open: boolean;
@@ -21,12 +22,14 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState(DEFAULT_MODEL);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const storedKey = localStorage.getItem("anthropic_api_key");
     if (storedKey) setApiKey(storedKey);
+    setModel(localStorage.getItem("anthropic_model") || DEFAULT_MODEL);
   }, [open]);
 
   const handleSave = () => {
@@ -35,6 +38,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     } else {
       localStorage.setItem("anthropic_api_key", apiKey.trim());
     }
+    localStorage.setItem("anthropic_model", model);
     toast({ title: "Settings saved", description: "Your API key has been updated." });
     onOpenChange(false);
   };
@@ -87,6 +91,25 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </Select>
             <p className="text-[11px] text-muted-foreground">
               Theme preference is stored locally in your browser.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="model">Claude Model</Label>
+            <Select value={model} onValueChange={setModel}>
+              <SelectTrigger id="model">
+                <SelectValue placeholder="Choose model" />
+              </SelectTrigger>
+              <SelectContent>
+                {CLAUDE_MODELS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              This model will be used for new requests from this browser.
             </p>
           </div>
         </div>
