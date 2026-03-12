@@ -49,7 +49,7 @@ A self-hosted, full-stack Claude chat interface built with React, Express, and P
 ### 1. Clone and install
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/saurabhraj-115/claudeLike.git
 cd Claude-Interface
 npm install
 ```
