@@ -4,9 +4,44 @@ import { Button } from "@/components/ui/button";
 import { Plus, MessageSquare, Trash2, Settings, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SettingsModal } from "./SettingsModal";
+import { consumeNewConversation } from "@/lib/animation-queue";
+import type { Conversation } from "@shared/schema";
+
+const CHAR_INTERVAL_MS = 36;
+
+function AnimatedTitle({ conv }: { conv: Conversation }) {
+  const title = conv.title || "New Chat";
+  const [shouldAnimate] = useState(() => consumeNewConversation(conv.id));
+  const [displayed, setDisplayed] = useState(shouldAnimate ? "" : title);
+  const [isAnimating, setIsAnimating] = useState(shouldAnimate);
+
+  useEffect(() => {
+    if (!shouldAnimate) return;
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayed(title.slice(0, i));
+      if (i >= title.length) {
+        clearInterval(timer);
+        setIsAnimating(false);
+      }
+    }, CHAR_INTERVAL_MS);
+    return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <span className="truncate">
+      {displayed}
+      {isAnimating && (
+        <span className="inline-block w-[1.5px] h-[0.8em] bg-current align-middle ml-[1px] animate-pulse" />
+      )}
+    </span>
+  );
+}
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
@@ -58,7 +93,7 @@ export function Sidebar() {
               <div className="flex items-center gap-3 overflow-hidden">
                 <MessageSquare className="w-4 h-4 shrink-0 opacity-50" />
                 <div className="flex flex-col truncate">
-                  <span className="truncate">{conv.title || "New Chat"}</span>
+                  <AnimatedTitle conv={conv} />
                   <span className="text-[10px] opacity-60 font-normal">
                     {conv.createdAt ? format(new Date(conv.createdAt), "MMM d, h:mm a") : ""}
                   </span>

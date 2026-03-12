@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthHeaders } from "@/lib/queryClient";
+import { markConversationNew } from "@/lib/animation-queue";
 import type { ChatAttachment } from "@/lib/chat";
 import type { Conversation } from "@shared/schema";
 
@@ -123,6 +124,11 @@ export function useSendMessage() {
       return api.chat.send.responses[200].parse(await res.json());
     },
     onSuccess: (data, variables) => {
+      // Mark brand-new conversations so the sidebar can animate the title
+      if (!variables.conversationId) {
+        markConversationNew(data.conversationId);
+      }
+
       if (data.title) {
         queryClient.setQueryData<Conversation[] | undefined>(
           [api.conversations.list.path],
