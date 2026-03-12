@@ -1,6 +1,6 @@
 import { Message } from "@shared/schema";
 import ReactMarkdown from "react-markdown";
-import { Bot, Copy, Check, FileText } from "lucide-react";
+import { Bot, Copy, Check, FileText, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
@@ -12,7 +12,6 @@ interface MessageListProps {
 }
 
 const CLAUDE_AVATAR_SRC = "/favicon.svg";
-const USER_AVATAR_SRC = "https://commons.wikimedia.org/wiki/Special:FilePath/Borat%20Sagdiyev.jpg";
 
 function CodeBlock({
   children,
@@ -87,12 +86,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <img
-                src={USER_AVATAR_SRC}
-                alt="Borat"
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-              />
+              <User className="w-4 h-4" />
             )}
           </div>
 

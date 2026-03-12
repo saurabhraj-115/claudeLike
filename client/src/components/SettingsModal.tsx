@@ -22,6 +22,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [apiKey, setApiKey] = useState("");
+  const [appSecret, setAppSecret] = useState("");
   const [model, setModel] = useState(DEFAULT_MODEL);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
@@ -29,6 +30,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   useEffect(() => {
     const storedKey = localStorage.getItem("anthropic_api_key");
     if (storedKey) setApiKey(storedKey);
+    const storedSecret = localStorage.getItem("app_secret");
+    if (storedSecret) setAppSecret(storedSecret);
     setModel(localStorage.getItem("anthropic_model") || DEFAULT_MODEL);
   }, [open]);
 
@@ -38,8 +41,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     } else {
       localStorage.setItem("anthropic_api_key", apiKey.trim());
     }
+    if (!appSecret.trim()) {
+      localStorage.removeItem("app_secret");
+    } else {
+      localStorage.setItem("app_secret", appSecret.trim());
+    }
     localStorage.setItem("anthropic_model", model);
-    toast({ title: "Settings saved", description: "Your API key has been updated." });
+    toast({ title: "Settings saved", description: "Your settings have been updated." });
     onOpenChange(false);
   };
 
@@ -71,6 +79,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <ShieldCheck className="w-3 h-3 text-green-600" />
               Your key is never stored on our servers, only passed through for the request.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="app-secret">App Secret</Label>
+            <Input
+              id="app-secret"
+              type="password"
+              placeholder="Leave blank if APP_SECRET is not set on the server"
+              value={appSecret}
+              onChange={(e) => setAppSecret(e.target.value)}
+              className="font-mono text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <ShieldCheck className="w-3 h-3 text-green-600" />
+              Must match the APP_SECRET set in the server environment.
             </p>
           </div>
 

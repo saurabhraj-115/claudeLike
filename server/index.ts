@@ -24,6 +24,18 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: "6mb" }));
 
+// Auth middleware: if APP_SECRET is set, require Bearer token on all /api routes
+app.use("/api", (req, res, next) => {
+  const appSecret = process.env.APP_SECRET;
+  if (!appSecret) return next(); // skip auth when not configured (dev)
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || authHeader !== `Bearer ${appSecret}`) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+});
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -51,7 +63,8 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        const summary = JSON.stringify(capturedJsonResponse);
+        logLine += ` :: ${summary.length > 200 ? summary.slice(0, 200) + "…" : summary}`;
       }
 
       log(logLine);
@@ -70,7 +83,8 @@ app.use((req, res, next) => {
     }
 
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    // Don't leak internal error details to the client for server errors
+    const message = status >= 500 ? "Internal Server Error" : (err.message || "Internal Server Error");
 
     console.error("Internal Server Error:", err);
 

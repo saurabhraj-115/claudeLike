@@ -1,10 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
-import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildFallbackConversationTitle, generateConversationTitle } from "./conversation-title";
+import { CLAUDE_MODEL_IDS, DEFAULT_MODEL } from "@shared/models";
+
+const chatRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests, please slow down." },
+});
 
 const MAX_RESPONSE_TOKENS = 4096;
 const MAX_CONTINUATIONS = 3;
@@ -77,46 +86,71 @@ export async function registerRoutes(
 
   app.get(api.conversations.get.path, async (req, res) => {
     const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid conversation ID" });
     const conversation = await storage.getConversation(id);
     if (!conversation) return res.status(404).json({ message: "Conversation not found" });
-    
+
     const messages = await storage.getMessages(id);
     res.json({ ...conversation, messages });
   });
 
   app.delete(api.conversations.delete.path, async (req, res) => {
-    await storage.deleteConversation(parseInt(req.params.id as string));
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid conversation ID" });
+    await storage.deleteConversation(id);
     res.status(204).send();
   });
 
   // Messages
   app.get(api.messages.list.path, async (req, res) => {
-    const messages = await storage.getMessages(parseInt(req.params.id as string));
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid conversation ID" });
+    const messages = await storage.getMessages(id);
     res.json(messages);
   });
 
   app.post(api.messages.create.path, async (req, res) => {
     const conversationId = parseInt(req.params.id as string);
+    if (isNaN(conversationId)) return res.status(400).json({ message: "Invalid conversation ID" });
+
+    const parsed = api.messages.create.input.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid request body" });
+
     const message = await storage.createMessage({
       conversationId,
-      ...req.body,
+      ...parsed.data,
     });
     res.status(201).json(message);
   });
 
+  const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+
   // Chat Endpoint
-  app.post(api.chat.send.path, async (req, res) => {
+  app.post(api.chat.send.path, chatRateLimit, async (req, res) => {
     try {
       const {
         message,
         conversationId,
-        apiKey,
-        model = "claude-sonnet-4-20250514",
+        model: rawModel,
         attachments = [],
       } = req.body;
 
+      // Read API key from header, not request body
+      const apiKey = req.headers["x-api-key"] as string | undefined;
       if (!apiKey) {
         return res.status(401).json({ message: "Anthropic API Key is required." });
+      }
+
+      // Validate model against known list; fall back to default if unrecognised
+      const model = (CLAUDE_MODEL_IDS as readonly string[]).includes(rawModel)
+        ? rawModel as string
+        : DEFAULT_MODEL;
+
+      // Server-side attachment media type validation
+      for (const attachment of attachments) {
+        if (attachment.kind === "image" && !ALLOWED_MEDIA_TYPES.has(attachment.mediaType)) {
+          return res.status(400).json({ message: `Unsupported image type: ${attachment.mediaType}` });
+        }
       }
 
       const anthropic = new Anthropic({ apiKey });
@@ -222,7 +256,11 @@ export async function registerRoutes(
 
     } catch (error: any) {
       console.error("Anthropic API Error:", error);
-      res.status(500).json({ message: error.message || "Failed to communicate with AI" });
+      // Surface auth errors from Anthropic (bad key) but not internal details
+      if (error?.status === 401 || error?.status === 403) {
+        return res.status(401).json({ message: "Invalid or unauthorised Anthropic API Key." });
+      }
+      res.status(500).json({ message: "Failed to communicate with AI." });
     }
   });
 

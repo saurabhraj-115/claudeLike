@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthHeaders } from "@/lib/queryClient";
 import type { ChatAttachment } from "@/lib/chat";
 import type { Conversation } from "@shared/schema";
 
@@ -9,7 +10,7 @@ export function useConversations() {
   return useQuery({
     queryKey: [api.conversations.list.path],
     queryFn: async () => {
-      const res = await fetch(api.conversations.list.path);
+      const res = await fetch(api.conversations.list.path, { headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch conversations");
       return api.conversations.list.responses[200].parse(await res.json());
     },
@@ -23,7 +24,7 @@ export function useConversation(id: number | null) {
     queryFn: async () => {
       if (!id) return null;
       const url = buildUrl(api.conversations.get.path, { id });
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: getAuthHeaders() });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch conversation");
       return api.conversations.get.responses[200].parse(await res.json());
@@ -41,7 +42,7 @@ export function useCreateConversation() {
     mutationFn: async () => {
       const res = await fetch(api.conversations.create.path, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       });
       if (!res.ok) throw new Error("Failed to create conversation");
       return api.conversations.create.responses[201].parse(await res.json());
@@ -67,7 +68,7 @@ export function useDeleteConversation() {
   return useMutation({
     mutationFn: async (id: number) => {
       const url = buildUrl(api.conversations.delete.path, { id });
-      const res = await fetch(url, { method: "DELETE" });
+      const res = await fetch(url, { method: "DELETE", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to delete conversation");
     },
     onSuccess: () => {
@@ -108,8 +109,12 @@ export function useSendMessage() {
 
       const res = await fetch(api.chat.send.path, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, conversationId, apiKey, model, attachments: requestAttachments }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(apiKey ? { "X-Api-Key": apiKey } : {}),
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ message, conversationId, model, attachments: requestAttachments }),
       });
       
       if (res.status === 401) throw new Error("Invalid API Key");

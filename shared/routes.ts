@@ -78,7 +78,6 @@ export const api = {
       input: z.object({
         message: z.string(),
         conversationId: z.number().optional(),
-        apiKey: z.string().optional(),
         model: z.string().optional(),
         attachments: z.array(attachmentSchema).optional(),
       }),
